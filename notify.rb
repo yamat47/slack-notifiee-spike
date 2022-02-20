@@ -6,23 +6,52 @@ require 'pathname'
 require 'fileutils'
 require 'ulid'
 
-module MockHttpClient
-  def post(uri, params)
-    payload = JSON.parse(params[:payload])
+module SlackNotifiee
+  def enable
+    storage_path = Pathname('tmp/slack-notifiee')
 
-    filepath = Pathname("tmp/slack-notifiee/#{ULID.generate}.json")
-    File.open(filepath, 'w') { |file| JSON.dump(payload.merge(uri: uri), file) }
+    _reset_storage(storage_path)
+    _override_http_client(storage_path)
   end
 
-  module_function :post
+  def _reset_storage(path)
+    ::FileUtils.mkdir_p(path)
+    ::FileUtils.rm_f(path.children)
+  end
+
+  def _override_http_client(path)
+    ::Slack::Notifier.class_eval { prepend SlackNotifierExtension }
+  end
+
+  module_function :enable, :_reset_storage, :_override_http_client
+  private_class_method :_reset_storage, :_override_http_client
+
+  module HttpClient
+    def post(uri, params)
+      payload = JSON.parse(params[:payload])
+      notification_content = payload.merge(uri: uri)
+
+      filepath = Pathname(Pathname('tmp/slack-notifiee')) + "#{ULID.generate}.json"
+      File.open(filepath, 'w') { |file| JSON.dump(notification_content, file) }
+    end
+
+    module_function :post
+  end
+
+  module SlackNotifierExtension
+    def initialize(webhook_url, options={}, &block)
+      http_client = ::SlackNotifiee::HttpClient
+      options.merge!(http_client: http_client)
+
+      super(webhook_url, options, &block)
+    end
+  end
 end
 
-path = Pathname('tmp/slack-notifiee')
-FileUtils.mkdir_p(path)
-FileUtils.rm_f(path.children)
+SlackNotifiee.enable
 
 webhook_url = ENV.fetch('SLACK_WEBHOOK_URL')
-notifier = Slack::Notifier.new(webhook_url, http_client: MockHttpClient)
+notifier = Slack::Notifier.new(webhook_url)
 
 text = "Danny Torrence left a 1 star review for your property."
 block = [

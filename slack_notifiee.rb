@@ -1,46 +1,44 @@
 module SlackNotifiee
   def enable
-    _reset_storage(storage_path)
-    _override_http_client(storage_path)
+    _reset_storage
+    _override_http_client
   end
 
-  def storage_path
+  def store_notification(notification)
+    filepath = _storage_path + "#{ULID.generate}.json"
+    File.open(filepath, 'w') { |file| JSON.dump(notification, file) }
+  end
+
+  def _storage_path
     Pathname('tmp/slack-notifiee')
   end
 
-  def http_client
-    SlackNotifiee::HttpClient.new(storage_path)
+  def _reset_storage
+    ::FileUtils.mkdir_p(_storage_path)
+    ::FileUtils.rm_f(_storage_path.children)
   end
 
-  def _reset_storage(path)
-    ::FileUtils.mkdir_p(path)
-    ::FileUtils.rm_f(path.children)
-  end
-
-  def _override_http_client(path)
+  def _override_http_client
     ::Slack::Notifier.class_eval { prepend SlackNotifierExtension }
   end
 
-  module_function :enable, :storage_path, :http_client, :_reset_storage, :_override_http_client
-  private_class_method :_reset_storage, :_override_http_client
+  module_function :enable, :store_notification, :_storage_path, :_reset_storage, :_override_http_client
+  private_class_method :_storage_path, :_reset_storage, :_override_http_client
 
-  class HttpClient
-    def initialize(storage_path)
-      @storage_path = storage_path
-    end
-
+  module HttpClient
     def post(uri, params)
       payload = JSON.parse(params[:payload])
       notification_content = payload.merge(uri: uri, datetime: Time.now.iso8601(6))
 
-      filepath = @storage_path + "#{ULID.generate}.json"
-      File.open(filepath, 'w') { |file| JSON.dump(notification_content, file) }
+      SlackNotifiee.store_notification(notification_content)
     end
+
+    module_function :post
   end
 
   module SlackNotifierExtension
     def initialize(webhook_url, options={}, &block)
-      http_client = ::SlackNotifiee.http_client
+      http_client = ::SlackNotifiee::HttpClient
       options.merge!(http_client: http_client)
 
       super(webhook_url, options, &block)

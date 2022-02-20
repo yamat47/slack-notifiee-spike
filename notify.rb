@@ -5,48 +5,9 @@ require 'dotenv/load'
 require 'pathname'
 require 'fileutils'
 require 'ulid'
+require 'time'
 
-module SlackNotifiee
-  def enable
-    storage_path = Pathname('tmp/slack-notifiee')
-
-    _reset_storage(storage_path)
-    _override_http_client(storage_path)
-  end
-
-  def _reset_storage(path)
-    ::FileUtils.mkdir_p(path)
-    ::FileUtils.rm_f(path.children)
-  end
-
-  def _override_http_client(path)
-    ::Slack::Notifier.class_eval { prepend SlackNotifierExtension }
-  end
-
-  module_function :enable, :_reset_storage, :_override_http_client
-  private_class_method :_reset_storage, :_override_http_client
-
-  module HttpClient
-    def post(uri, params)
-      payload = JSON.parse(params[:payload])
-      notification_content = payload.merge(uri: uri)
-
-      filepath = Pathname(Pathname('tmp/slack-notifiee')) + "#{ULID.generate}.json"
-      File.open(filepath, 'w') { |file| JSON.dump(notification_content, file) }
-    end
-
-    module_function :post
-  end
-
-  module SlackNotifierExtension
-    def initialize(webhook_url, options={}, &block)
-      http_client = ::SlackNotifiee::HttpClient
-      options.merge!(http_client: http_client)
-
-      super(webhook_url, options, &block)
-    end
-  end
-end
+require_relative './slack_notifiee'
 
 SlackNotifiee.enable
 
@@ -87,4 +48,4 @@ block = [
   }
 ]
 
-notifier.post text: text, blocks: block
+100.times { notifier.post text: text, blocks: block }

@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    slack-notifier (2.4.0)
+
+PLATFORMS
+  arm64-darwin-21
+
+DEPENDENCIES
+  slack-notifier
+
+BUNDLED WITH
+   2.3.3

@@ -4,12 +4,13 @@ require 'slack-notifier'
 require 'dotenv/load'
 require 'pathname'
 require 'fileutils'
+require 'ulid'
 
 module MockHttpClient
   def post(uri, params)
     payload = JSON.parse(params[:payload])
 
-    filepath = Pathname("tmp/slack-notifiee/#{Random.rand(100000..999999)}.json")
+    filepath = Pathname("tmp/slack-notifiee/#{ULID.generate}.json")
     File.open(filepath, 'w') { |file| JSON.dump(payload.merge(uri: uri), file) }
   end
 

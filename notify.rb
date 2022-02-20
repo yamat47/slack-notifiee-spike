@@ -1,13 +1,11 @@
 # frozen_string_literal: true
+#
+# Usage:
+#   $ bundle exec ruby notify.rb
 
 require 'slack-notifier'
+require 'slack_notifiee'
 require 'dotenv/load'
-require 'pathname'
-require 'fileutils'
-require 'ulid'
-require 'time'
-
-require_relative './slack_notifiee'
 
 SlackNotifiee.enable
 

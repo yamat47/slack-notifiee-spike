@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/yamat47/slack_notifiee.git
+  revision: d5526f18e1083f5c4de5f815d039430ed4105b95
+  specs:
+    slack_notifiee (0.1.0)
+      slack-notifier
+      ulid
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -66,6 +74,7 @@ PLATFORMS
 DEPENDENCIES
   dotenv-rails
   slack-notifier
+  slack_notifiee!
   ulid
 
 BUNDLED WITH

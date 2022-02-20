@@ -9,6 +9,12 @@ module SlackNotifiee
     File.open(filepath, 'w') { |file| JSON.dump(notification, file) }
   end
 
+  def notifications
+    _storage_path.children.map(&:read).map do |notification_content|
+      JSON.parse(notification_content)
+    end
+  end
+
   def _storage_path
     Pathname('tmp/slack-notifiee')
   end
@@ -22,7 +28,7 @@ module SlackNotifiee
     ::Slack::Notifier.class_eval { prepend SlackNotifierExtension }
   end
 
-  module_function :enable, :store_notification, :_storage_path, :_reset_storage, :_override_http_client
+  module_function :enable, :store_notification, :notifications, :_storage_path, :_reset_storage, :_override_http_client
   private_class_method :_storage_path, :_reset_storage, :_override_http_client
 
   module HttpClient
